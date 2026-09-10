@@ -1,6 +1,6 @@
 # 01 — Requirements
 
-**Status:** Draft, awaiting approval
+**Status:** Approved (amended at Station 2 with three clarifications to R5 and R8)
 **Station:** 1 (Intake)
 **Date:** 2026-09-10
 
@@ -67,6 +67,10 @@ field that is showing an error.
 - After a submit that produced errors, editing a field with an error re-checks
   that field on each input event and clears its error as soon as it is valid.
 - Fields that are not showing an error are not validated on input.
+- Editing a field clears that field's error whichever system produced it. An R7
+  credential message ("Incorrect email") is stale the moment the value changes,
+  so it clears on the first input event rather than waiting for the next submit.
+  *(Clarification added at Station 2.)*
 
 ### R6 — Field validation rules and inline errors
 
@@ -136,6 +140,12 @@ Correct credentials replace the form with a signed-in panel inside the same card
 - A "Sign out" button returns the card to an empty, error-free form.
 - The transition happens in place; the browser does not navigate.
 - Nothing is persisted; a page refresh returns to the signed-out form.
+- Sign out resets the card to a genuine first-visit state: both values cleared,
+  both errors cleared, the "has been submitted" flag cleared so validation is
+  quiet again, and the password toggle back to hidden.
+  *(Clarification added at Station 2.)*
+- After Sign out, keyboard focus moves to the email field.
+  *(Clarification added at Station 2.)*
 
 ### R9 — Visual design
 
