@@ -1,6 +1,6 @@
 # 03 — Implementation plan
 
-**Status:** Draft, awaiting approval
+**Status:** Approved (two amendments recorded at the end of this document)
 **Station:** 3 (Planning)
 **Depends on:** `01-requirements.md`, `02-architecture.md` (both approved)
 **Date:** 2026-09-10
@@ -55,19 +55,23 @@ Each branch is cut fresh from `main` after the previous pull request merges.
 Nothing to build. This phase exists because the documents are the factory, and
 they belong on `main` before code starts.
 
-**Blocked on:** a GitHub repository existing, and a decision about whether it is
-public or private.
+**Resolved:** `gh` is installed and authenticated, and the repository exists as
+private. This phase is PR #1.
 
 ---
 
 ## Phase B — logic, on `feat/logic`
 
 ### T1 — Project skeleton
-- `package.json` containing `{ "type": "module" }` and nothing else.
+- `package.json` containing `{ "type": "module" }` and a single
+  `"scripts": { "test": "node --test" }` entry, so the suite runs as `npm test`.
+  Still no dependencies, and nothing is installed. *(Amendment 1 below.)*
 - `README.md` stub: what the project is, how to run it, the demo credential, and
   the "must be served over HTTP" warning from ADR-0005.
 - Create `src/` and `tests/`.
-- **Done when:** `node --test` runs and reports zero tests without erroring.
+- `tests/smoke.test.js`: one trivial assertion, proving the runner works before
+  anything depends on it. Deleted in T3. *(Amendment 2 below.)*
+- **Done when:** `npm test` passes.
 - **Commit:** `chore: add project skeleton (T1)`
 
 ### T2 — `validation.js`
@@ -80,7 +84,8 @@ public or private.
 - Cases: empty, whitespace-only, missing `@`, two `@`, nothing before `@`,
   no dot in domain, dot at the domain edge, valid address, surrounding
   whitespace on a valid address, empty password, single-character password.
-- **Done when:** `node --test` passes and every R6 rule has at least one case.
+- Delete `tests/smoke.test.js`. The runner is now proven by real tests.
+- **Done when:** `npm test` passes and every R6 rule has at least one case.
 - **Commit:** `test: cover validation rules (T3 / R6, R12)`
 
 ### T4 — `auth.js`
@@ -188,7 +193,30 @@ gates — which are the part of this exercise that matters.
 | The two error systems collide in one slot | Prevented by ordering: R6 runs to completion before R7 begins. Verified explicitly in T12. |
 | Pending state gets stuck after an unexpected failure | T10's done-condition names this. Restore the state in a `finally`. |
 
-## Open question
+## Resolved questions
 
-1. GitHub: does a repository exist yet, should it be public or private, and is
-   the `gh` CLI installed and authenticated on this machine?
+1. **GitHub.** The `gh` CLI is installed and authenticated. The repository is
+   created as **private**, named `log-in-page`, with this machine as the source.
+2. **Merge strategy.** Merge commits, not squash. Squashing would collapse the
+   per-task commits into one and destroy the task-to-requirement references that
+   `CLAUDE.md` rule 3 requires. The standard decided this, not preference.
+
+## Amendments
+
+Recorded rather than silently applied, because a plan that gets quietly rewritten
+stops being a plan.
+
+1. **`npm test` script added to `package.json`** (T1). ADR-0005 specified
+   `{ "type": "module" }` "and nothing else". A `scripts.test` entry installs
+   nothing and adds no dependency, so it does not violate the intent of that ADR,
+   and it was approved explicitly at Station 3.
+2. **T1's done-when was unreachable and is corrected** (T1, T3). It originally
+   read "`node --test` runs and reports zero tests without erroring". Node's test
+   runner exits with a failure when it finds no test files, so no version of T1
+   could ever have satisfied it. T1 now creates a one-assertion smoke test,
+   proving the harness works before real tests rely on it, and T3 deletes that
+   file once `validation.test.js` exists.
+
+   This was caught by writing out T1's exact commands before running them. The
+   lesson is worth keeping: the cheapest place to find a broken plan is one step
+   before executing it.
