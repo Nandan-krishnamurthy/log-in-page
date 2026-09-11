@@ -41,6 +41,17 @@
   box-sizing: border-box;
 }
 
+/*
+  The `hidden` attribute works only through the browser's default stylesheet,
+  and any author rule that sets `display` - `.form { display: flex }`, say -
+  silently beats it, leaving a "hidden" element on screen. This puts it back.
+  render toggles `hidden` on the form and on the signed-in panel (R8), and both
+  set `display`, so without this line signing in would show the two at once.
+*/
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   /* Side padding lives here, once, so nothing else has to remember it. It is
@@ -111,6 +122,16 @@ body {
   margin: 0;
   font-size: 0.9375rem;
   color: var(--text-muted);
+}
+
+/*
+  The heading only ever takes focus by script, after a successful sign-in, and
+  can never be reached with Tab (tabindex="-1"). A ring on it would suggest it
+  can be operated, which it cannot. Removing an outline is normally a mistake;
+  it is right only for an element the keyboard can never land on.
+*/
+.card__title:focus {
+  outline: none;
 }
 
 /* --------------------------------------------------------------- form --- */
@@ -258,6 +279,17 @@ body {
   opacity: 0.65;
 }
 
+.button--secondary {
+  color: var(--accent);
+  background: var(--card-bg);
+  /* A control boundary, so 3:1 applies. The accent is 7.2:1 on white. */
+  border-color: var(--accent);
+}
+
+.button--secondary:hover {
+  background: var(--page-bg);
+}
+
 /* ------------------------------------------------- form-level messages --- */
 
 .form-message {
@@ -281,6 +313,28 @@ body {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+/* ------------------------------------------------------ signed-in panel --- */
+
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.session__label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.session__email {
+  margin: 0 0 20px;
+  font-weight: 600;
+  /* A long address has to wrap rather than push the card wider than a 320px
+     screen, which would bring back the sideways scroll R10 forbids. */
+  overflow-wrap: anywhere;
 }
 
 /* ---------------------------------------------------------------- a11y --- */

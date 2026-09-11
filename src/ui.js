@@ -25,15 +25,24 @@ import { signIn } from './auth.js';
  * T9 amendment, and the input handlers below. "Is this field currently showing
  * an error?" answers the same question R5 asks, so the flag would be state that
  * nothing reads.
+ *
+ * Built by a function rather than written once as a literal, because R8 needs
+ * exactly this state again on sign out. With one function serving both, "first
+ * visit" and "after sign out" cannot drift apart - there is only one definition
+ * of what a fresh form is.
  */
-const state = {
-  values: { email: '', password: '' },
-  errors: { email: null, password: null }, // message string, or null
-  formMessage: null, // a failure that belongs to neither field (R7)
-  pending: false, // a sign-in is in flight (R13)
-  passwordVisible: false, // (R3)
-  session: null, // { email } once signed in (R8)
-};
+function initialState() {
+  return {
+    values: { email: '', password: '' },
+    errors: { email: null, password: null }, // message string, or null
+    formMessage: null, // a failure that belongs to neither field (R7)
+    pending: false, // a sign-in is in flight (R13)
+    passwordVisible: false, // (R3)
+    session: null, // { email } once signed in (R8)
+  };
+}
+
+const state = initialState();
 
 const el = {
   form: document.getElementById('signin-form'),
@@ -45,6 +54,11 @@ const el = {
   submit: document.getElementById('submit'),
   formMessage: document.getElementById('form-message'),
   formStatus: document.getElementById('form-status'),
+  title: document.getElementById('card-title'),
+  subtitle: document.getElementById('card-subtitle'),
+  session: document.getElementById('session'),
+  sessionEmail: document.getElementById('session-email'),
+  signOut: document.getElementById('sign-out'),
 };
 
 /**
@@ -90,6 +104,14 @@ function render(state) {
   el.submit.disabled = state.pending;
   el.submit.textContent = state.pending ? 'Signing in…' : 'Sign in';
   el.formStatus.textContent = state.pending ? 'Signing in' : '';
+
+  // R8: the signed-in panel replaces the form, in place, inside the same card.
+  const signedIn = state.session !== null;
+  el.form.hidden = signedIn;
+  el.session.hidden = !signedIn;
+  el.sessionEmail.textContent = state.session?.email ?? '';
+  el.title.textContent = signedIn ? 'You’re signed in' : 'Sign in';
+  el.subtitle.hidden = signedIn;
 }
 
 /**
@@ -169,9 +191,11 @@ const CREDENTIAL_ERRORS = {
  */
 function applyResult(result) {
   if (result.ok) {
-    // Rendered in T11, which replaces the form with the signed-in panel.
     state.session = { email: result.email };
-    return null;
+    // R8 / R11: the button that had focus has just been hidden along with the
+    // form, so focus must go somewhere deliberate. The heading announces the
+    // new state; leaving focus to chance would announce nothing at all.
+    return el.title;
   }
 
   const known = CREDENTIAL_ERRORS[result.reason];
@@ -194,6 +218,17 @@ function applyResult(result) {
 el.toggle.addEventListener('click', () => {
   state.passwordVisible = !state.passwordVisible;
   render(state);
+});
+
+el.signOut.addEventListener('click', () => {
+  // R8: back to a genuine first visit. Deliberately not a list of fields to
+  // clear, which would be one short the day someone adds a field - the same
+  // function that built the first state builds this one.
+  Object.assign(state, initialState());
+  render(state);
+
+  // R8: the user will type their email next, so that is where focus goes.
+  el.email.focus();
 });
 
 el.form.addEventListener('submit', async (event) => {

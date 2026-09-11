@@ -36,8 +36,14 @@
         </svg>
         <p class="wordmark">Acme</p>
 
-        <h1 class="card__title">Sign in</h1>
-        <p class="card__subtitle">Use your Acme account to continue.</p>
+        <!--
+          tabindex="-1" makes the heading focusable by script while keeping it
+          out of the tab order. After a successful sign-in the button that had
+          focus disappears with the form, so focus moves here (R8, R11) and a
+          screen reader announces the new state instead of falling silent.
+        -->
+        <h1 class="card__title" id="card-title" tabindex="-1">Sign in</h1>
+        <p class="card__subtitle" id="card-subtitle">Use your Acme account to continue.</p>
       </header>
 
       <!--
@@ -120,6 +126,17 @@
 
         <button class="button button--primary" id="submit" type="submit">Sign in</button>
       </form>
+
+      <!--
+        Signed-in panel (R8). In the page from the start and hidden, like every
+        other element render controls, so render toggles an attribute rather
+        than building and destroying markup (ADR-0004).
+      -->
+      <div class="session" id="session" hidden>
+        <p class="session__label">Signed in as</p>
+        <p class="session__email" id="session-email"></p>
+        <button class="button button--secondary" id="sign-out" type="button">Sign out</button>
+      </div>
 
       <!--
         Polite status region for the pending state (R13). Separate from the alert
