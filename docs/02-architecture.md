@@ -131,14 +131,21 @@ submit
      │    └─ any errors? → render, focus first invalid field, stop
      └─ pending = true → render       ← R13: button disabled, inputs read-only
         └─ await signIn(...)          ← R7, the seam
-           ├─ ok            → session = { email }, pending = false
-           ├─ unknown_email → errors.email    = 'Incorrect email'
-           └─ incorrect_password → errors.password = 'Incorrect password'
-              └─ pending = false → render
+           ├─ ok                 → session = { email }
+           ├─ unknown_email      → errors.email    = 'Incorrect email'
+           ├─ incorrect_password → errors.password = 'Incorrect password'
+           └─ anything else      → generic message (default branch)
+              └─ finally: pending = false → render
 ```
 
 Format checks (R6) always run before credential checks (R7), so the two error
 systems can never contend for the same slot in a single pass.
+
+Two details in that diagram are deliberate. `pending = false` sits in a `finally`,
+so no outcome — including one nobody anticipated — can leave the form stuck
+disabled. And the mapping has a `default` branch, so an unrecognised `reason`
+produces a vague message rather than silence. Both cost a line each now and exist
+because a real server will eventually return things this version cannot.
 
 ## Testing strategy
 

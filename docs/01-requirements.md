@@ -86,6 +86,13 @@ field that is showing an error.
 - The offending input is visually marked (border colour) and marked
   `aria-invalid="true"`, with the message linked via `aria-describedby`.
 - On a failed submit, focus moves to the first field with an error.
+- **These checks are a convenience, not a control.** Client-side validation exists
+  to give fast feedback and nothing else. It provides no security whatsoever: a
+  browser can be made to send any values at all, bypassing every rule here. When a
+  server exists, every rule in this requirement must be enforced again on the
+  server, which is the only authoritative check. Where the two disagree, the
+  server wins and the client rule is the one that is wrong.
+  *(Amendment added before PR #1 merged.)*
 
 ### R7 — Credential check and failure message
 
@@ -119,6 +126,18 @@ demo account held in the JavaScript.
   field and a message; it does not itself know how credentials are verified.
   This boundary exists so that a real server call can replace the hardcoded check
   later without the form code changing — see "Future direction".
+- A result the form does not recognise — any `ok: false` with a `reason` outside
+  the two above — renders the generic message "Something went wrong. Please try
+  again." rather than rendering nothing. It appears in the form-level live region
+  that R11 already requires, not in a new element, and not under either field —
+  it belongs to neither. In this version that branch is
+  unreachable, because `signIn` can only return the three shapes listed. It exists
+  because a real server adds outcomes that are not about credentials at all
+  (unreachable network, server error, rate limit, locked account), and the worst
+  possible behaviour is a form that stops its pending state and then says nothing.
+  This is a default branch in the result mapping only. No dedicated error UI is
+  built for conditions that cannot yet occur.
+  *(Amendment added before PR #1 merged.)*
 
 > **Recorded decision — user enumeration.** Separate "Incorrect email" and
 > "Incorrect password" messages are more helpful to the person signing in, and

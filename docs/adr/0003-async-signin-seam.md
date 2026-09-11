@@ -49,6 +49,34 @@ R13's pending state exists to give that asynchrony somewhere to show.
 - A trivially small amount of ceremony today — an `await` that never waits — in
   exchange for that.
 
+## Revisited before PR #1 merged
+
+The question was raised of whether the backend should be specified now, as part of
+this project, rather than deferred to a later one. The decision was to defer, and
+the reasoning is worth recording because it justifies this ADR's existence.
+
+Everything a real backend would decide — runtime, database, password hashing,
+cookies versus tokens, session storage, rate limiting, deployment — sits behind
+`signIn` and changes no line of frontend code. That is not a happy accident; it is
+the property this seam was bought for, and the question was its first real test.
+
+Two things were found to be genuinely underspecified, and only two. Both are now
+amended into R6 and R7:
+
+1. The result taxonomy had no room for outcomes that are not about credentials —
+   an unreachable network, a server error, a rate limit, a locked account. The fix
+   is a `default` branch in the form's result mapping, not an error UI for
+   conditions that cannot yet occur. Building unreachable UI would produce code
+   that cannot be demonstrated or tested, which our own definition of done forbids.
+2. Nothing recorded that client-side validation is not a security control. Free to
+   state, and expensive as a mental model to acquire by accident.
+
+The backend itself becomes its own full run through the stations, with two that
+this project does not have: defining the contract between two codebases, and
+migrating existing frontend code onto it. Deferring is what makes that second run
+a real test of this ADR rather than a formality — including the possibility that
+the verdict is that this decision was wrong.
+
 ## Alternatives considered
 
 - **A synchronous `checkCredentials()` returning a boolean.** Simpler now,

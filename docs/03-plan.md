@@ -144,7 +144,9 @@ private. This phase is PR #1.
 ### T10 — Credentials and pending state
 - Await `signIn`, map `unknown_email` and `incorrect_password` to their fields.
 - Pending state: button disabled and relabelled, inputs read-only, no double
-  submit, restored on both outcomes.
+  submit, restored in a `finally` so no outcome can leave it stuck.
+- A `default` branch in the result mapping renders the generic message for any
+  unrecognised `reason` (R7 amendment).
 - **Done when:** both credential messages appear under the right field, clear on
   edit, and the pending state cannot be left stuck.
 - **Commit:** `feat: wire credential check and pending state (T10 / R7, R13)`
