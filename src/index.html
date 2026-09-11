@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sign in · Acme</title>
     <link rel="stylesheet" href="styles.css" />
-    <!--
-      No script yet. T8 adds the module script, so each task owns the wiring it
-      needs.
-    -->
   </head>
 
   <body>
@@ -129,5 +125,13 @@
       -->
       <p class="visually-hidden" id="form-status" role="status"></p>
     </main>
+
+    <!--
+      type="module" so ui.js can import validation.js and auth.js. Module
+      scripts are deferred by default, so the document is parsed before it runs
+      and getElementById is safe at the top level. It is also why this page must
+      be served over HTTP rather than opened from the filesystem (ADR-0005).
+    -->
+    <script type="module" src="ui.js"></script>
   </body>
 </html>
