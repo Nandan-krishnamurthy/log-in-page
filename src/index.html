@@ -81,8 +81,13 @@
             than being created when an error appears. aria-describedby can then
             point at a stable id, and ADR-0004's render only has to change text
             rather than build and destroy elements.
+
+            aria-live="polite" gets the message announced when it appears.
+            Moving focus to the field is not enough on its own: if the field
+            already has focus, focusing it again does nothing, and the message
+            would appear in silence. Found in the final review (F4).
           -->
-          <p class="field__error" id="email-error"></p>
+          <p class="field__error" id="email-error" aria-live="polite"></p>
         </div>
 
         <div class="field">
@@ -113,15 +118,16 @@
               Show
             </button>
           </div>
-          <p class="field__error" id="password-error"></p>
+          <p class="field__error" id="password-error" aria-live="polite"></p>
         </div>
 
         <p class="form__forgot">
           <!--
             Placeholder, per R4: visible and focusable, and it navigates nowhere
-            in this version.
+            in this version. The href is what makes it focusable; ui.js cancels
+            the jump to "#" that the href would otherwise make (found at T12).
           -->
-          <a class="link" href="#">Forgot password?</a>
+          <a class="link" id="forgot-password" href="#">Forgot password?</a>
         </p>
 
         <button class="button button--primary" id="submit" type="submit">Sign in</button>

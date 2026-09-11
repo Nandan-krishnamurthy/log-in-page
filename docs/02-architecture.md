@@ -107,8 +107,8 @@ Handlers never poke at the DOM directly.
 
 ```js
 {
-  values:          { email: '', password: '' },
   errors:          { email: null, password: null },   // message or null
+  formMessage:     null,    // a failure belonging to neither field     (R7)
   pending:         false,   // a signIn call is in flight               (R13)
   passwordVisible: false,   //                                          (R3)
   session:         null     // { email } once signed in                 (R8)
@@ -123,6 +123,13 @@ Handlers never poke at the DOM directly.
 > never read — exactly the kind of value that drifts out of step with the thing it
 > claims to track. It was removed from the code, and this document was corrected
 > to match, rather than the code being bent to match the document.
+>
+> **Amended after the final review.** Two further changes. `values` is gone:
+> field values belong to the browser — autofill and password managers write them
+> without always firing an event — so a copy here went stale and render, writing
+> it back, erased real input (F5; see the ADR-0004 amendment). And `formMessage`,
+> added to the code at T10 for the generic failure, was never added here; this
+> listing had drifted from the code for two phases without anyone noticing.
 
 Why bother, on a form this small? Because the alternative — each handler
 mutating the DOM in place — is how forms end up in impossible states: a spinner

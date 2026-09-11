@@ -15,7 +15,7 @@
   --page-bg: #f6f7f9;
   --card-bg: #ffffff;
 
-  --text: #1a1d21; /* 16.1:1 on white */
+  --text: #1a1d21; /* 16.9:1 on white */
   --text-muted: #5b6169; /* 6.2:1 on white */
 
   --border: #8b929c; /* 3.1:1 on white - a control boundary, not decoration */
@@ -217,24 +217,36 @@ body {
   text-decoration: underline;
 }
 
-/*
-  :empty collapses the slot entirely when there is no message, so the markup can
-  keep a permanent element for aria-describedby to reference without it taking
-  up space or reserving a gap.
-*/
 .field__error {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--error);
 }
 
+/*
+  An empty slot must stay in the accessibility tree. It is a live region (F4),
+  and a live region has to exist before its text changes or the change is not
+  announced - the same reason as .form-message below. So it is never
+  display:none. Empty, it has no height, and the negative margin cancels the
+  6px gap the field would otherwise leave for it, so the layout is unchanged.
+*/
 .field__error:empty {
-  display: none;
+  margin-top: -6px;
 }
 
 .form__forgot {
-  margin: -4px 0 0;
+  /* Pulled in at both ends so the link's taller hit area, below, does not push
+     the layout apart: the text sits about where it did before T12. */
+  margin: -16px 0 -12px;
   font-size: 0.875rem;
+}
+
+/* R10: 44px tall to a finger, like every other control, although it reads as a
+   single line of small text. Added at T12, which found it at about 21px. */
+.form__forgot .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
 }
 
 .link {
