@@ -59,6 +59,7 @@ const el = {
   session: document.getElementById('session'),
   sessionEmail: document.getElementById('session-email'),
   signOut: document.getElementById('sign-out'),
+  forgot: document.getElementById('forgot-password'),
 };
 
 /**
@@ -214,6 +215,14 @@ function applyResult(result) {
   state.formMessage = GENERIC_FAILURE;
   return el.submit;
 }
+
+el.forgot.addEventListener('click', (event) => {
+  // R4: a placeholder that navigates nowhere. The href has to stay, because an
+  // <a> without one cannot be reached with Tab. This cancels the jump to "#"
+  // that the href would otherwise make, which changed the URL and added a
+  // history entry. Found at T12.
+  event.preventDefault();
+});
 
 el.toggle.addEventListener('click', () => {
   state.passwordVisible = !state.passwordVisible;

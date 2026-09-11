@@ -119,9 +119,10 @@
         <p class="form__forgot">
           <!--
             Placeholder, per R4: visible and focusable, and it navigates nowhere
-            in this version.
+            in this version. The href is what makes it focusable; ui.js cancels
+            the jump to "#" that the href would otherwise make (found at T12).
           -->
-          <a class="link" href="#">Forgot password?</a>
+          <a class="link" id="forgot-password" href="#">Forgot password?</a>
         </p>
 
         <button class="button button--primary" id="submit" type="submit">Sign in</button>
