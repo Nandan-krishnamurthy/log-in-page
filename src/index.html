@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in · Acme</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <main class="card">
+      <header class="card__header">
+        <!--
+          Placeholder wordmark. Deliberately generic: an abstract mark and the
+          standard placeholder name, so nothing here imitates a real company's
+          branding. aria-hidden because the mark carries no information the
+          heading does not already give.
+        -->
+        <svg
+          class="mark"
+          width="36"
+          height="36"
+          viewBox="0 0 32 32"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <rect x="2" y="2" width="28" height="28" rx="9" fill="currentColor" opacity="0.12" />
+          <path
+            d="M10 16.5l4 4 8-9"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <p class="wordmark">Acme</p>
+
+        <!--
+          tabindex="-1" makes the heading focusable by script while keeping it
+          out of the tab order. After a successful sign-in the button that had
+          focus disappears with the form, so focus moves here (R8, R11) and a
+          screen reader announces the new state instead of falling silent.
+        -->
+        <h1 class="card__title" id="card-title" tabindex="-1">Sign in</h1>
+        <p class="card__subtitle" id="card-subtitle">Use your Acme account to continue.</p>
+      </header>
+
+      <!--
+        Form-level message, for the generic failure from the R7 amendment. It
+        belongs to neither field, so it sits above the form rather than under an
+        input. role="alert" so it is announced when it appears.
+
+        Deliberately not `hidden` while empty. A live region has to be in the
+        accessibility tree before its content changes, or some screen readers
+        never announce the change - so it stays present and empty, and CSS
+        collapses it. (Changed at T10; T6 originally used `hidden`.)
+      -->
+      <p class="form-message" id="form-message" role="alert"></p>
+
+      <!--
+        novalidate turns off the browser's own validation. Without it the browser
+        would show its own bubbles before our code ran, which would fight R5's
+        timing rule and R6's exact wording. We do the checking, so we must also
+        do the suppressing.
+      -->
+      <form class="form" id="signin-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="email">Email</label>
+          <input
+            class="field__input"
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            aria-describedby="email-error"
+            required
+          />
+          <!--
+            The error slot is always in the document and starts empty, rather
+            than being created when an error appears. aria-describedby can then
+            point at a stable id, and ADR-0004's render only has to change text
+            rather than build and destroy elements.
+          -->
+          <p class="field__error" id="email-error"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <div class="field__control">
+            <input
+              class="field__input"
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              aria-describedby="password-error"
+              required
+            />
+            <!--
+              type="button" matters: a button inside a form defaults to submit,
+              so without this, showing the password would submit the form (R3).
+              aria-pressed carries the state, which is why the visible label can
+              stay a plain word.
+            -->
+            <button
+              class="field__toggle"
+              id="toggle-password"
+              type="button"
+              aria-pressed="false"
+              aria-controls="password"
+            >
+              Show
+            </button>
+          </div>
+          <p class="field__error" id="password-error"></p>
+        </div>
+
+        <p class="form__forgot">
+          <!--
+            Placeholder, per R4: visible and focusable, and it navigates nowhere
+            in this version.
+          -->
+          <a class="link" href="#">Forgot password?</a>
+        </p>
+
+        <button class="button button--primary" id="submit" type="submit">Sign in</button>
+      </form>
+
+      <!--
+        Signed-in panel (R8). In the page from the start and hidden, like every
+        other element render controls, so render toggles an attribute rather
+        than building and destroying markup (ADR-0004).
+      -->
+      <div class="session" id="session" hidden>
+        <p class="session__label">Signed in as</p>
+        <p class="session__email" id="session-email"></p>
+        <button class="button button--secondary" id="sign-out" type="button">Sign out</button>
+      </div>
+
+      <!--
+        Polite status region for the pending state (R13). Separate from the alert
+        above because "signing in" is progress, not a problem, and the two should
+        not interrupt each other. Visually hidden in T7; it exists for screen
+        readers only.
+      -->
+      <p class="visually-hidden" id="form-status" role="status"></p>
+    </main>
+
+    <!--
+      type="module" so ui.js can import validation.js and auth.js. Module
+      scripts are deferred by default, so the document is parsed before it runs
+      and getElementById is safe at the top level. It is also why this page must
+      be served over HTTP rather than opened from the filesystem (ADR-0005).
+    -->
+    <script type="module" src="ui.js"></script>
+  </body>
+</html>

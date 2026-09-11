@@ -165,9 +165,12 @@ Correct credentials replace the form with a signed-in panel inside the same card
 - The transition happens in place; the browser does not navigate.
 - Nothing is persisted; a page refresh returns to the signed-out form.
 - Sign out resets the card to a genuine first-visit state: both values cleared,
-  both errors cleared, the "has been submitted" flag cleared so validation is
-  quiet again, and the password toggle back to hidden.
-  *(Clarification added at Station 2.)*
+  both errors cleared — which on its own makes validation quiet again, since R5
+  only re-checks a field that is already showing an error — and the password
+  toggle back to hidden.
+  *(Clarification added at Station 2. Amended at T9, when implementing R5 showed
+  that a separate "has been submitted" flag duplicated what the errors already
+  record.)*
 - After Sign out, keyboard focus moves to the email field.
   *(Clarification added at Station 2.)*
 

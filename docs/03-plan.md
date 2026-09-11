@@ -1,6 +1,6 @@
 # 03 — Implementation plan
 
-**Status:** Approved (two amendments recorded at the end of this document)
+**Status:** Approved (three amendments recorded at the end of this document)
 **Station:** 3 (Planning)
 **Depends on:** `01-requirements.md`, `02-architecture.md` (both approved)
 **Date:** 2026-09-10
@@ -191,7 +191,7 @@ gates — which are the part of this exercise that matters.
 | Risk | Handling |
 |---|---|
 | Email validation rules argue with real-world addresses | R6 defines a deliberately simple rule. It will reject some valid exotic addresses. Accepted and recorded, not fixed by escalating to a regex nobody can read. |
-| `ui.js` grows past the point where reading it substitutes for testing it | If it passes roughly 200 lines, stop and reconsider ADR-0002's testing split rather than pressing on. |
+| `ui.js` grows past the point where reading it substitutes for testing it | Threshold is roughly 200 lines **of code**, not counting comments or blank lines. At that point, stop and reconsider ADR-0002's testing split rather than pressing on. Reviewed at the end of Phase C at 133 lines of code (297 total) and accepted — see Amendment 3. |
 | The two error systems collide in one slot | Prevented by ordering: R6 runs to completion before R7 begins. Verified explicitly in T12. |
 | Pending state gets stuck after an unexpected failure | T10's done-condition names this. Restore the state in a `finally`. |
 
@@ -222,3 +222,17 @@ stops being a plan.
    This was caught by writing out T1's exact commands before running them. The
    lesson is worth keeping: the cheapest place to find a broken plan is one step
    before executing it.
+3. **The `ui.js` size threshold is measured in lines of code, and was reviewed
+   at 133 and accepted** (Phase C). The risk table said "roughly 200 lines"
+   without saying whether comments count. At the end of Phase C, `ui.js` had 297
+   lines in total and 133 lines of code.
+
+   The threshold was not checked at T9 or T10, when the total first passed 200 —
+   only while preparing PR #3. A tripwire that nobody looks at does not trip.
+
+   On review: one `render` function and a handful of handlers remain readable in
+   a single sitting, and T12's manual verification sweep is the check that
+   compensates for `ui.js` having no automated tests. Moving its near-pure logic —
+   `initialState`, the result mapping in `applyResult`, the re-validation rule in
+   `handleInput` — into a DOM-free module under `node --test` was considered and
+   deferred. It is the response to reach for if the file grows further.
