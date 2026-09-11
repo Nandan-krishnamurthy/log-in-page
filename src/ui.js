@@ -16,6 +16,7 @@
  */
 
 import { validateForm, validateEmail, validatePassword } from './validation.js';
+import { signIn } from './auth.js';
 
 /**
  * Everything the page can be. One object, so there is one place to look.
@@ -28,6 +29,7 @@ import { validateForm, validateEmail, validatePassword } from './validation.js';
 const state = {
   values: { email: '', password: '' },
   errors: { email: null, password: null }, // message string, or null
+  formMessage: null, // a failure that belongs to neither field (R7)
   pending: false, // a sign-in is in flight (R13)
   passwordVisible: false, // (R3)
   session: null, // { email } once signed in (R8)
@@ -71,6 +73,10 @@ function render(state) {
 
   renderFieldError(el.email, el.emailError, state.errors.email);
   renderFieldError(el.password, el.passwordError, state.errors.password);
+
+  // R7 amendment. Text only - never hidden or shown. See the note on
+  // .form-message in styles.css for why a live region must stay in the page.
+  el.formMessage.textContent = state.formMessage ?? '';
 
   // R3: the toggle's label and its announced state move together.
   el.password.type = state.passwordVisible ? 'text' : 'password';
@@ -142,16 +148,67 @@ function handleInput(field, input) {
 el.email.addEventListener('input', () => handleInput('email', el.email));
 el.password.addEventListener('input', () => handleInput('password', el.password));
 
+const GENERIC_FAILURE = 'Something went wrong. Please try again.';
+
+/**
+ * R7: each credential failure belongs to one field and has its own message.
+ * Keyed by the reason codes signIn returns, so the form never needs to know how
+ * a check was made - only what it concluded (ADR-0003).
+ */
+const CREDENTIAL_ERRORS = {
+  unknown_email: { field: 'email', message: 'Incorrect email' },
+  incorrect_password: { field: 'password', message: 'Incorrect password' },
+};
+
+/**
+ * Turns a signIn result into state, and says where focus should go once the
+ * form is unlocked.
+ *
+ * @param {Awaited<ReturnType<typeof signIn>>} result
+ * @returns {HTMLElement|null}
+ */
+function applyResult(result) {
+  if (result.ok) {
+    // Rendered in T11, which replaces the form with the signed-in panel.
+    state.session = { email: result.email };
+    return null;
+  }
+
+  const known = CREDENTIAL_ERRORS[result.reason];
+
+  if (known) {
+    state.errors[known.field] = known.message;
+    // R6: on a failed submit, focus moves to the field with the error. A
+    // credential failure is a failed submit, so the same rule applies.
+    return el[known.field];
+  }
+
+  // The default branch from the R7 amendment. Unreachable in this version,
+  // since signIn only returns the two reasons above. It is here because a real
+  // server will return reasons this list has never heard of, and the worst
+  // possible response to one is saying nothing.
+  state.formMessage = GENERIC_FAILURE;
+  return el.submit;
+}
+
 el.toggle.addEventListener('click', () => {
   state.passwordVisible = !state.passwordVisible;
   render(state);
 });
 
-el.form.addEventListener('submit', (event) => {
+el.form.addEventListener('submit', async (event) => {
   // Unconditionally, before anything else. Without it the browser performs its
   // default GET and puts the password in the address bar, where it lands in
   // history and in server logs.
   event.preventDefault();
+
+  // R13: a second submit cannot start while one is in flight. The disabled
+  // button already blocks both clicks and Enter, but that is a property of the
+  // markup; this is the rule itself, stated where it cannot be styled away.
+  if (state.pending) return;
+
+  // A previous attempt's generic failure was about that attempt, not this one.
+  state.formMessage = null;
 
   // R6: format first, always. Credentials are only ever checked on values that
   // are well-formed, so the two error systems cannot contend for one slot.
@@ -173,7 +230,31 @@ el.form.addEventListener('submit', (event) => {
     return;
   }
 
-  // T10: the credential check goes here.
+  // R13: from here until the result is in, the form is locked.
+  state.pending = true;
+  render(state);
+
+  let focusAfter = null;
+
+  try {
+    const result = await signIn(state.values.email, state.values.password);
+    focusAfter = applyResult(result);
+  } catch {
+    // Nothing in this version can throw. A real network can, and the R7
+    // amendment's rule applies to it just the same: never end in silence.
+    state.formMessage = GENERIC_FAILURE;
+    focusAfter = el.submit;
+  } finally {
+    // R13: restored on every path, including ones nobody anticipated. This is
+    // the line that makes "stuck disabled forever" structurally impossible
+    // rather than merely untested.
+    state.pending = false;
+    render(state);
+  }
+
+  // After the render that unlocked the form, not before: a button cannot take
+  // focus while it is still disabled.
+  focusAfter?.focus();
 });
 
 // One render before anything happens, so the page starts in a state this file

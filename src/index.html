@@ -43,10 +43,14 @@
       <!--
         Form-level message, for the generic failure from the R7 amendment. It
         belongs to neither field, so it sits above the form rather than under an
-        input. role="alert" so it is announced when it appears; `hidden` until
-        there is something to say.
+        input. role="alert" so it is announced when it appears.
+
+        Deliberately not `hidden` while empty. A live region has to be in the
+        accessibility tree before its content changes, or some screen readers
+        never announce the change - so it stays present and empty, and CSS
+        collapses it. (Changed at T10; T6 originally used `hidden`.)
       -->
-      <p class="form-message" id="form-message" role="alert" hidden></p>
+      <p class="form-message" id="form-message" role="alert"></p>
 
       <!--
         novalidate turns off the browser's own validation. Without it the browser

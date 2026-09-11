@@ -271,6 +271,18 @@ body {
   border-radius: var(--radius);
 }
 
+/*
+  Collapsed when empty - but never display:none, and never `hidden`. A live
+  region has to be in the accessibility tree already when its text changes, or
+  the change goes unannounced. So it stays in the page at zero size, which is a
+  different thing from being absent from it.
+*/
+.form-message:empty {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 /* ---------------------------------------------------------------- a11y --- */
 
 /*
