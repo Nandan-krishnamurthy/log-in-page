@@ -26,6 +26,12 @@ import { signIn } from './auth.js';
  * an error?" answers the same question R5 asks, so the flag would be state that
  * nothing reads.
  *
+ * There is no copy of the field values either. The browser owns what is in an
+ * input - typing, autofill, password managers and form restoration all write
+ * there, and not all of them fire an event - so a copy kept here goes stale,
+ * and a render that wrote it back erased real input. Code reads the fields
+ * directly when it needs them (F5, ADR-0004 amendment).
+ *
  * Built by a function rather than written once as a literal, because R8 needs
  * exactly this state again on sign out. With one function serving both, "first
  * visit" and "after sign out" cannot drift apart - there is only one definition
@@ -33,7 +39,6 @@ import { signIn } from './auth.js';
  */
 function initialState() {
   return {
-    values: { email: '', password: '' },
     errors: { email: null, password: null }, // message string, or null
     formMessage: null, // a failure that belongs to neither field (R7)
     pending: false, // a sign-in is in flight (R13)
@@ -76,22 +81,14 @@ const el = {
  * @param {typeof state} state
  */
 function render(state) {
-  // Only written when it actually differs. Assigning to `value` while someone
-  // is typing can move the caret to the end, and this is the one place where
-  // rendering could interfere with input.
-  if (el.email.value !== state.values.email) {
-    el.email.value = state.values.email;
-  }
-  if (el.password.value !== state.values.password) {
-    el.password.value = state.values.password;
-  }
-
+  // Input values are deliberately absent: render never writes into a field.
+  // See the note on state above (F5).
   renderFieldError(el.email, el.emailError, state.errors.email);
   renderFieldError(el.password, el.passwordError, state.errors.password);
 
   // R7 amendment. Text only - never hidden or shown. See the note on
   // .form-message in styles.css for why a live region must stay in the page.
-  el.formMessage.textContent = state.formMessage ?? '';
+  setText(el.formMessage, state.formMessage ?? '');
 
   // R3: the toggle's label and its announced state move together.
   el.password.type = state.passwordVisible ? 'text' : 'password';
@@ -104,7 +101,7 @@ function render(state) {
   el.password.readOnly = state.pending;
   el.submit.disabled = state.pending;
   el.submit.textContent = state.pending ? 'Signing in…' : 'Sign in';
-  el.formStatus.textContent = state.pending ? 'Signing in' : '';
+  setText(el.formStatus, state.pending ? 'Signing in' : '');
 
   // R8: the signed-in panel replaces the form, in place, inside the same card.
   const signedIn = state.session !== null;
@@ -124,7 +121,7 @@ function render(state) {
  * @param {string|null} message
  */
 function renderFieldError(input, slot, message) {
-  slot.textContent = message ?? '';
+  setText(slot, message ?? '');
 
   if (message) {
     input.setAttribute('aria-invalid', 'true');
@@ -133,6 +130,22 @@ function renderFieldError(input, slot, message) {
     // is nothing wrong. `aria-invalid="false"` is valid but noisier to read.
     input.removeAttribute('aria-invalid');
   }
+}
+
+/**
+ * Writes text only when it differs from what is already there.
+ *
+ * Every write to a live region is a potential announcement, and render runs on
+ * every keystroke. Rewriting an unchanged "Password is required" on each key
+ * pressed in the email field could have it read out again and again. Writing
+ * only on a real change keeps "render sets everything" true without making the
+ * page talk over the person typing (F4).
+ *
+ * @param {HTMLElement} node
+ * @param {string} text
+ */
+function setText(node, text) {
+  if (node.textContent !== text) node.textContent = text;
 }
 
 /* ------------------------------------------------------------- events --- */
@@ -157,12 +170,10 @@ const validators = {
  * @param {HTMLInputElement} input
  */
 function handleInput(field, input) {
-  state.values[field] = input.value;
-
   // A field with no error stays quiet on input, even after a submit (R5).
   // Clearing a valid field back to empty does not nag; the next submit will.
   if (state.errors[field] !== null) {
-    state.errors[field] = validators[field](state.values[field]);
+    state.errors[field] = validators[field](input.value);
   }
 
   render(state);
@@ -234,6 +245,13 @@ el.signOut.addEventListener('click', () => {
   // clear, which would be one short the day someone adds a field - the same
   // function that built the first state builds this one.
   Object.assign(state, initialState());
+
+  // The one place the page writes field values, and it only ever clears them.
+  // reset() empties every field in the form, including any added later, so it
+  // keeps the property above: there is no list of fields to fall out of date.
+  // It is the single exception to "handlers never touch the DOM" - the values
+  // are the browser's, not state's (F5, ADR-0004 amendment).
+  el.form.reset();
   render(state);
 
   // R8: the user will type their email next, so that is where focus goes.
@@ -254,15 +272,20 @@ el.form.addEventListener('submit', async (event) => {
   // A previous attempt's generic failure was about that attempt, not this one.
   state.formMessage = null;
 
+  // Read straight from the fields: the page keeps no copy of them (F5).
+  const values = { email: el.email.value, password: el.password.value };
+
   // R6: format first, always. Credentials are only ever checked on values that
   // are well-formed, so the two error systems cannot contend for one slot.
-  state.errors = validateForm(state.values);
+  state.errors = validateForm(values);
   render(state);
 
-  // R6 / R11: send focus to the first problem, in document order. Focusing the
-  // input also makes a screen reader announce its label and, through
-  // aria-describedby, its error — so the message is heard without a separate
-  // live region for field errors.
+  // R6 / R11: send focus to the first problem, in document order. Focus alone
+  // does not get the error announced: if that field already has focus - Enter
+  // pressed inside it - focusing it again does nothing. The error slots are
+  // live regions so that an error is announced when it appears (F4). An
+  // identical error on a repeated submit is not announced again, because its
+  // text has not changed; that is recorded as a known limitation.
   const firstInvalid = state.errors.email
     ? el.email
     : state.errors.password
@@ -281,7 +304,7 @@ el.form.addEventListener('submit', async (event) => {
   let focusAfter = null;
 
   try {
-    const result = await signIn(state.values.email, state.values.password);
+    const result = await signIn(values.email, values.password);
     focusAfter = applyResult(result);
   } catch {
     // Nothing in this version can throw. A real network can, and the R7
@@ -301,6 +324,7 @@ el.form.addEventListener('submit', async (event) => {
   focusAfter?.focus();
 });
 
-// One render before anything happens, so the page starts in a state this file
-// chose rather than whatever the markup happened to contain.
+// One render before anything happens, so everything render governs starts in a
+// state this file chose. The fields' contents are not among those things: a
+// browser may restore or autofill them, and that is the browser's business (F5).
 render(state);

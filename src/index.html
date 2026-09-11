@@ -81,8 +81,13 @@
             than being created when an error appears. aria-describedby can then
             point at a stable id, and ADR-0004's render only has to change text
             rather than build and destroy elements.
+
+            aria-live="polite" gets the message announced when it appears.
+            Moving focus to the field is not enough on its own: if the field
+            already has focus, focusing it again does nothing, and the message
+            would appear in silence. Found in the final review (F4).
           -->
-          <p class="field__error" id="email-error"></p>
+          <p class="field__error" id="email-error" aria-live="polite"></p>
         </div>
 
         <div class="field">
@@ -113,7 +118,7 @@
               Show
             </button>
           </div>
-          <p class="field__error" id="password-error"></p>
+          <p class="field__error" id="password-error" aria-live="polite"></p>
         </div>
 
         <p class="form__forgot">

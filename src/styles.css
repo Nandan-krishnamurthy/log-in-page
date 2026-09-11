@@ -217,19 +217,21 @@ body {
   text-decoration: underline;
 }
 
-/*
-  :empty collapses the slot entirely when there is no message, so the markup can
-  keep a permanent element for aria-describedby to reference without it taking
-  up space or reserving a gap.
-*/
 .field__error {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--error);
 }
 
+/*
+  An empty slot must stay in the accessibility tree. It is a live region (F4),
+  and a live region has to exist before its text changes or the change is not
+  announced - the same reason as .form-message below. So it is never
+  display:none. Empty, it has no height, and the negative margin cancels the
+  6px gap the field would otherwise leave for it, so the layout is unchanged.
+*/
 .field__error:empty {
-  display: none;
+  margin-top: -6px;
 }
 
 .form__forgot {
