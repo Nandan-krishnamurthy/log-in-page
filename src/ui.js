@@ -15,13 +15,19 @@
  * spinner still spinning beside a cleared error, a button disabled forever.
  */
 
+import { validateForm, validateEmail, validatePassword } from './validation.js';
+
 /**
  * Everything the page can be. One object, so there is one place to look.
+ *
+ * There is no `submitted` flag. The architecture originally listed one; see its
+ * T9 amendment, and the input handlers below. "Is this field currently showing
+ * an error?" answers the same question R5 asks, so the flag would be state that
+ * nothing reads.
  */
 const state = {
   values: { email: '', password: '' },
   errors: { email: null, password: null }, // message string, or null
-  submitted: false, // has submit been attempted at least once (R5)
   pending: false, // a sign-in is in flight (R13)
   passwordVisible: false, // (R3)
   session: null, // { email } once signed in (R8)
@@ -102,15 +108,39 @@ function renderFieldError(input, slot, message) {
 
 /* ------------------------------------------------------------- events --- */
 
-el.email.addEventListener('input', () => {
-  state.values.email = el.email.value;
-  render(state);
-});
+const validators = {
+  email: validateEmail,
+  password: validatePassword,
+};
 
-el.password.addEventListener('input', () => {
-  state.values.password = el.password.value;
+/**
+ * R5: quiet until the first submit, then live — but only for a field that is
+ * already showing an error.
+ *
+ * One rule covers both kinds of error. A format error (R6) is re-checked and
+ * stays until the value is valid. A credential error (R7) can only exist on a
+ * value that already passed format validation, so re-checking it returns null
+ * and the stale "Incorrect email" clears on the first keystroke — which is
+ * exactly what the R5 clarification requires, without the code having to know
+ * which kind of error it is looking at.
+ *
+ * @param {'email' | 'password'} field
+ * @param {HTMLInputElement} input
+ */
+function handleInput(field, input) {
+  state.values[field] = input.value;
+
+  // A field with no error stays quiet on input, even after a submit (R5).
+  // Clearing a valid field back to empty does not nag; the next submit will.
+  if (state.errors[field] !== null) {
+    state.errors[field] = validators[field](state.values[field]);
+  }
+
   render(state);
-});
+}
+
+el.email.addEventListener('input', () => handleInput('email', el.email));
+el.password.addEventListener('input', () => handleInput('password', el.password));
 
 el.toggle.addEventListener('click', () => {
   state.passwordVisible = !state.passwordVisible;
@@ -121,11 +151,29 @@ el.form.addEventListener('submit', (event) => {
   // Unconditionally, before anything else. Without it the browser performs its
   // default GET and puts the password in the address bar, where it lands in
   // history and in server logs.
-  //
-  // T9 fills in what should happen instead. It is here now because the
-  // alternative is a commit in which signing in leaks the password to the URL,
-  // and an intermediate state is still a state someone could check out.
   event.preventDefault();
+
+  // R6: format first, always. Credentials are only ever checked on values that
+  // are well-formed, so the two error systems cannot contend for one slot.
+  state.errors = validateForm(state.values);
+  render(state);
+
+  // R6 / R11: send focus to the first problem, in document order. Focusing the
+  // input also makes a screen reader announce its label and, through
+  // aria-describedby, its error — so the message is heard without a separate
+  // live region for field errors.
+  const firstInvalid = state.errors.email
+    ? el.email
+    : state.errors.password
+      ? el.password
+      : null;
+
+  if (firstInvalid) {
+    firstInvalid.focus();
+    return;
+  }
+
+  // T10: the credential check goes here.
 });
 
 // One render before anything happens, so the page starts in a state this file

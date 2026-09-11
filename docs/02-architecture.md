@@ -109,12 +109,20 @@ Handlers never poke at the DOM directly.
 {
   values:          { email: '', password: '' },
   errors:          { email: null, password: null },   // message or null
-  submitted:       false,   // has submit been attempted at least once  (R5)
   pending:         false,   // a signIn call is in flight               (R13)
   passwordVisible: false,   //                                          (R3)
   session:         null     // { email } once signed in                 (R8)
 }
 ```
+
+> **Amended at T9.** This listing originally included `submitted: false`, a flag
+> recording whether submit had been attempted, which R5 appeared to need.
+> Implementing R5 showed that it does not. "Is this field showing an error?"
+> answers the same question in every case, because only a submit can create an
+> error in the first place. The flag would have been state that was written and
+> never read — exactly the kind of value that drifts out of step with the thing it
+> claims to track. It was removed from the code, and this document was corrected
+> to match, rather than the code being bent to match the document.
 
 Why bother, on a form this small? Because the alternative — each handler
 mutating the DOM in place — is how forms end up in impossible states: a spinner
@@ -126,7 +134,7 @@ displayed. See [ADR-0004](adr/0004-state-and-render-loop.md).
 
 ```
 submit
-  └─ submitted = true
+  └─ preventDefault()                 ← the browser must never GET this form
      ├─ validateForm(values)          ← R6, synchronous, format only
      │    └─ any errors? → render, focus first invalid field, stop
      └─ pending = true → render       ← R13: button disabled, inputs read-only
@@ -199,8 +207,10 @@ resolved here and needing your confirmation:
 2. **Where does focus go after Sign out?** R8 does not say. Decision: to the
    email field, which is where the user will type next.
 3. **What clears on Sign out?** R8 says the form returns "empty and error-free".
-   Decision: values, errors, `submitted` and `passwordVisible` all reset — the
-   card returns to a genuinely first-visit state.
+   Decision: values, errors and `passwordVisible` all reset — the card returns
+   to a genuinely first-visit state. *(This originally also listed a `submitted`
+   flag, removed at T9. Clearing the errors is what makes validation quiet
+   again.)*
 
 None of these change the acceptance criteria; they fill holes in them. If you
 approve, they are folded into R5 and R8 as clarifications.
