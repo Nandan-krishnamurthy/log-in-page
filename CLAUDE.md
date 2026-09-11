@@ -32,5 +32,7 @@ The workflow matters more than the product.
 - Acceptance criteria for the requirement are met.
 - Tests pass, if the task has testable logic.
 - The page has been opened in a browser and visually checked.
+- Any threshold in the risk table of `docs/03-plan.md` has been checked, and the
+  result stated at the gate — a tripwire nobody looks at does not trip.
 - The user has approved the diff.
 - Changes are committed.
