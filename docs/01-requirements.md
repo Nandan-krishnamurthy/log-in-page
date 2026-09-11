@@ -75,10 +75,15 @@ field that is showing an error.
 ### R6 — Field validation rules and inline errors
 
 **Acceptance criteria**
-- Email: required. Must be non-empty after trimming, contain exactly one `@`,
-  have text before the `@`, and have a domain after the `@` containing at least
-  one dot with characters either side. Anything else shows
-  "Enter a valid email address"; an empty field shows "Email is required".
+- Email: required. Must be non-empty after trimming, contain no whitespace once
+  trimmed, contain exactly one `@`, have text before the `@`, and have a domain
+  after the `@` made of at least two non-empty labels separated by dots — so
+  `a@b` (no dot), `a@.com` and `a@b.` (dot at an edge) and `a@b..c` (empty label)
+  are all rejected. Anything else shows "Enter a valid email address"; an empty
+  field shows "Email is required".
+  *(The whitespace clause and the empty-label wording were added at T2. Running
+  the finished code against real inputs showed that `a b@c.com` satisfied every
+  clause as originally written. The code was correct; the requirement was not.)*
 - Password: required, non-empty. An empty field shows "Password is required".
   No length or complexity rule is applied — strength rules belong on a sign-up
   form, not a sign-in form, where they would only help an attacker.
